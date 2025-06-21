@@ -1,0 +1,23 @@
+export const NATS_SERVERS = process.env.NATS_SERVERS || 'nats://localhost:4222'
+export const NATS_TOKEN = process.env.NATS_TOKEN || ''
+export const NATS_STREAM = process.env.NATS_STREAM || 'EVENTS'
+export const NATS_CONSUMER = process.env.NATS_CONSUMER || 'nis'
+export const DB_HOST = process.env.DB_HOST || 'localhost'
+export const DB_PORT = Number(process.env.DB_PORT || 3306)
+export const DB_USER = process.env.DB_USER || 'root'
+export const DB_PASSWORD = process.env.DB_PASSWORD || ''
+export const DB_NAME = process.env.DB_NAME || 'nis'
+export const TEMPLATE_MESSAGE_TERMINATED_SUBSCRIPTION =
+  process.env.TEMPLATE_MESSAGE_TERMINATED_SUBSCRIPTION ||
+  'Terminated service {id} {description}'
+export const SQL_SUBSCRIPTION_DETAIL =
+  process.env.SQL_SUBSCRIPTION_DETAIL ||
+  'SELECT id, account, description FROM subscriptions WHERE id = ?'
+export const NOTIFICATION_API_URL =
+  process.env.NOTIFICATION_API_URL ||
+  'http://localhost:3001/notification/v2/messages'
+export const NOTIFICATION_API_TOKEN =
+  process.env.NOTIFICATION_API_TOKEN || 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'
+export const TERMINATED_SUBSCRIPTION_PICS = JSON.parse(
+  process.env.TERMINATED_SUBSCRIPTION_PICS || '[]',
+)
