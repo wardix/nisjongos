@@ -34,7 +34,10 @@ export async function handleTtsCreated(msg: JsMsg) {
       const message = template
         .replace('{id}', String(id))
         .replace('{contact}', contact)
-        .replace('{subject}', subject)
+        .replace(
+          '{subject}',
+          subject.replace(' : ', ': ').replaceAll('\n', ' '),
+        )
       pics.forEach(async (to: string) => {
         await sendNotification({ to, message })
       })
