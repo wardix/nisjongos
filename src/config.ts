@@ -21,3 +21,13 @@ export const NOTIFICATION_API_TOKEN =
 export const TERMINATED_SUBSCRIPTION_PICS = JSON.parse(
   process.env.TERMINATED_SUBSCRIPTION_PICS || '[]',
 )
+
+export const SQL_ESCALATION_TICKET_DETAIL =
+  process.env.SQL_ESCALATION_TICKET_DETAIL ||
+  'SELECT id, subject, contact FROM tickets WHERE id = ?'
+export const TEMPLATE_MESSAGE_ESCALATION_TICKET =
+  process.env.TEMPLATE_MESSAGE_ESCALATION_TICKET ||
+  'Escalation ticket created {id} {subject}'
+export const ESCALATION_TICKET_PICS = JSON.parse(
+  process.env.ESCALATION_TICKET_PICS || '[]',
+)
