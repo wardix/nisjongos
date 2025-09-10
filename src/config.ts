@@ -28,6 +28,17 @@ export const SQL_ESCALATION_TICKET_DETAIL =
 export const TEMPLATE_MESSAGE_ESCALATION_TICKET =
   process.env.TEMPLATE_MESSAGE_ESCALATION_TICKET ||
   'Escalation ticket created {id} {subject}'
+export const TEMPLATE_MESSAGE_ESCALATION_TICKET_SOLVED =
+  process.env.TEMPLATE_MESSAGE_ESCALATION_TICKET_SOLVED ||
+  'escalation_ticket_solved'
 export const ESCALATION_TICKET_PICS = JSON.parse(
   process.env.ESCALATION_TICKET_PICS || '[]',
 )
+
+export const NUSACONTACT_MESSAGE_API_URL =
+  process.env.NUSACONTACT_MESSAGE_API_URL ||
+  'http://localhost:3000/api/messages'
+export const NUSACONTACT_API_KEY =
+  process.env.NUSACONTACT_API_KEY || 'xxxxxxxxxxxxxxxx'
+export const NUSACONTACT_SENDER_ID =
+  process.env.NUSACONTACT_SENDER_ID || '6281234567890'
