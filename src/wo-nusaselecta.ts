@@ -20,10 +20,21 @@ export async function handleWONusaselecta(msg: JsMsg) {
   const sc = StringCodec()
   try {
     const payload = JSON.parse(sc.decode(msg.data))
-    const account = payload.account
 
-    if (!account) {
-      logger.error('wo-nusaselecta: missing account in payload')
+    if (!payload.provisioningData) {
+      logger.error('wo-nusaselecta: missing provisioningData in payload')
+      msg.ack() // Ack to avoid retry loop for bad data
+      return
+    }
+
+    const {
+      ontUsername: account,
+      ontPassword: password,
+      paymentStatus,
+    } = payload.provisioningData
+
+    if (paymentStatus === 'FREE') {
+      logger.info(`wo-nusaselecta: FREE account: ${account}`)
       msg.ack() // Ack to avoid retry loop for bad data
       return
     }
@@ -67,7 +78,7 @@ export async function handleWONusaselecta(msg: JsMsg) {
         // Actually, if pool is full, redelivery won't help immediately.
         // Let's log error and Ack to clear the queue, or Nak if we expect ops to fix it fast.
         // Per plan "Log error & Stop" -> I'll Ack to remove the blocking message.
-        msg.ack() 
+        msg.ack()
         return
       }
 
@@ -77,13 +88,14 @@ export async function handleWONusaselecta(msg: JsMsg) {
     }
 
     // 3. Configure Router (Idempotent: running it again ensures state)
-    const command = NUSASELECTA_CMD_TEMPLATE.replace('{ip}', ip).replace(
-      '{account}',
-      account,
+    const command = NUSASELECTA_CMD_TEMPLATE.replace('{ip}', ip)
+      .replace('{account}', account)
+      .replace('{password}', password)
+
+    logger.info(
+      `Executing SSH command on ${NUSASELECTA_ROUTER_HOST}: ${command}`,
     )
 
-    logger.info(`Executing SSH command on ${NUSASELECTA_ROUTER_HOST}: ${command}`)
-    
     // Fix newline issues if key is passed as a single line in env vars
     const privateKey = NUSASELECTA_ROUTER_PRIVATE_KEY.replace(/\\n/g, '\n')
 
