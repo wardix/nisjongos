@@ -64,6 +64,11 @@ export const NUSASELECTA_ROUTER_PRIVATE_KEY =
 export const NUSASELECTA_CMD_TEMPLATE =
   process.env.NUSASELECTA_CMD_TEMPLATE ||
   '/ip firewall address-list add list=allowed address={ip} comment={account}'
+export const NUSASELECTA_BW_PROFILE_MAP = JSON.parse(
+  process.env.NUSASELECTA_BW_PROFILE_MAP || '{}',
+)
+export const NUSASELECTA_DEFAULT_PROFILE =
+  process.env.NUSASELECTA_DEFAULT_PROFILE || 'default'
 export const SQL_GET_USED_IPS_BY_PREFIX =
   process.env.SQL_GET_USED_IPS_BY_PREFIX ||
   'SELECT ip FROM ip_usage WHERE ip LIKE ?'

@@ -1,11 +1,12 @@
-import { StringCodec, type JsMsg } from 'nats'
-import logger from './logger'
+import { type JsMsg, StringCodec } from 'nats'
 import {
+  NUSASELECTA_BW_PROFILE_MAP,
   NUSASELECTA_CIDR,
   NUSASELECTA_CMD_TEMPLATE,
+  NUSASELECTA_DEFAULT_PROFILE,
   NUSASELECTA_ROUTER_HOST,
-  NUSASELECTA_ROUTER_PRIVATE_KEY,
   NUSASELECTA_ROUTER_PORT,
+  NUSASELECTA_ROUTER_PRIVATE_KEY,
   NUSASELECTA_ROUTER_USER,
 } from './config'
 import {
@@ -14,6 +15,7 @@ import {
   getIpByAccount,
   recordIpUsage,
 } from './ip-manager'
+import logger from './logger'
 import { executeRemoteCommand } from './ssh'
 
 export async function handleWONusaselecta(msg: JsMsg) {
@@ -31,6 +33,7 @@ export async function handleWONusaselecta(msg: JsMsg) {
       ontUsername: account,
       ontPassword: password,
       paymentStatus,
+      bandwidth,
     } = payload.provisioningData
 
     if (paymentStatus === 'FREE') {
@@ -88,9 +91,19 @@ export async function handleWONusaselecta(msg: JsMsg) {
     }
 
     // 3. Configure Router (Idempotent: running it again ensures state)
+    let profile = NUSASELECTA_DEFAULT_PROFILE
+    if (bandwidth && NUSASELECTA_BW_PROFILE_MAP[bandwidth]) {
+      profile = NUSASELECTA_BW_PROFILE_MAP[bandwidth]
+    } else {
+      logger.warn(
+        `No profile map found for bandwidth: ${bandwidth}, using default: ${profile}`,
+      )
+    }
+
     const command = NUSASELECTA_CMD_TEMPLATE.replace('{ip}', ip)
       .replace('{account}', account)
       .replace('{password}', password)
+      .replace('{profile}', profile)
 
     logger.info(
       `Executing SSH command on ${NUSASELECTA_ROUTER_HOST}: ${command}`,
