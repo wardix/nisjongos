@@ -37,21 +37,30 @@ export async function handleWONusaselecta(msg: JsMsg) {
       logger.info(`Account ${account} already has IP: ${ip}`)
     } else {
       // 2. Provision new IP
-      // Convert CIDR (e.g., 192.168.10.0/24) to prefix (e.g., 192.168.10.%)
-      // This is a simple heuristic assuming standard /24 or similar class-C alignment
-      // For more complex subnets, we might need a better regex or library approach
-      const cidrParts = NUSASELECTA_CIDR.split('.')
-      if (cidrParts.length < 3) {
-        throw new Error(`Invalid CIDR format for prefixing: ${NUSASELECTA_CIDR}`)
+      const cidrPools = NUSASELECTA_CIDR.split(',').map((c) => c.trim())
+      let newIp: string | null = null
+
+      for (const poolCidr of cidrPools) {
+        // Convert CIDR (e.g., 192.168.10.0/24) to prefix (e.g., 192.168.10.%)
+        const cidrParts = poolCidr.split('.')
+        if (cidrParts.length < 3) {
+          logger.warn(`Skipping invalid CIDR format in pool: ${poolCidr}`)
+          continue
+        }
+        const prefix = `${cidrParts[0]}.${cidrParts[1]}.${cidrParts[2]}.%`
+
+        const usedIps = await getAllUsedIps(prefix)
+        const candidateIp = findAvailableIp(poolCidr, usedIps)
+
+        if (candidateIp) {
+          newIp = candidateIp
+          break // Found an IP, stop searching
+        }
       }
-      const prefix = `${cidrParts[0]}.${cidrParts[1]}.${cidrParts[2]}.%`
-      
-      const usedIps = await getAllUsedIps(prefix)
-      const newIp = findAvailableIp(NUSASELECTA_CIDR, usedIps)
 
       if (!newIp) {
         logger.error(
-          `CRITICAL: No available IP in pool ${NUSASELECTA_CIDR} for account ${account}`,
+          `CRITICAL: No available IP in pools [${NUSASELECTA_CIDR}] for account ${account}`,
         )
         // We might want to NAK here with delay, but for now we stop to prevent loops
         // or let it crash to alert ops. Let's NAK without Ack so NATS redelivers?
