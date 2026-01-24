@@ -1,6 +1,10 @@
 import IPCIDR from 'ip-cidr'
 import { pool } from './database'
-import { SQL_GET_IP_BY_ACCOUNT, SQL_RECORD_IP_USAGE } from './config'
+import {
+  SQL_GET_IP_BY_ACCOUNT,
+  SQL_RECORD_IP_USAGE,
+  SQL_GET_USED_IPS_BY_PREFIX,
+} from './config'
 import logger from './logger'
 
 export async function getIpByAccount(
@@ -33,6 +37,28 @@ export async function recordIpUsage(
     logger.info(`Recorded IP usage for account ${accountName}: ${ip}`)
   } catch (error: any) {
     logger.error('Error recording IP usage', { error: error.message })
+    throw error
+  }
+}
+
+export async function getAllUsedIps(cidrPrefix: string): Promise<string[]> {
+  try {
+    const [rows] = await pool.execute(SQL_GET_USED_IPS_BY_PREFIX, [cidrPrefix])
+    const results = rows as any[]
+    if (results.length > 0) {
+      // Assuming 'ip' is the column name, or taking the first column
+      return results.map((row) => {
+        const keys = Object.keys(row)
+        const firstKey = keys[0]
+        if (firstKey) {
+          return row[firstKey]
+        }
+        return null
+      }).filter((ip) => ip !== null) as string[]
+    }
+    return []
+  } catch (error: any) {
+    logger.error('Error fetching used IPs by prefix', { error: error.message })
     throw error
   }
 }

@@ -49,3 +49,21 @@ export const SQL_GET_IP_BY_ACCOUNT =
 export const SQL_RECORD_IP_USAGE =
   process.env.SQL_RECORD_IP_USAGE ||
   'INSERT INTO ip_usage (account, ip, created_at) VALUES (?, ?, NOW())'
+
+export const NUSASELECTA_CIDR =
+  process.env.NUSASELECTA_CIDR || '192.168.10.0/24'
+export const NUSASELECTA_ROUTER_HOST =
+  process.env.NUSASELECTA_ROUTER_HOST || 'localhost'
+export const NUSASELECTA_ROUTER_PORT = Number(
+  process.env.NUSASELECTA_ROUTER_PORT || 22,
+)
+export const NUSASELECTA_ROUTER_USER =
+  process.env.NUSASELECTA_ROUTER_USER || 'admin'
+export const NUSASELECTA_ROUTER_PASSWORD =
+  process.env.NUSASELECTA_ROUTER_PASSWORD || ''
+export const NUSASELECTA_CMD_TEMPLATE =
+  process.env.NUSASELECTA_CMD_TEMPLATE ||
+  '/ip firewall address-list add list=allowed address={ip} comment={account}'
+export const SQL_GET_USED_IPS_BY_PREFIX =
+  process.env.SQL_GET_USED_IPS_BY_PREFIX ||
+  'SELECT ip FROM ip_usage WHERE ip LIKE ?'
