@@ -42,3 +42,10 @@ export const NUSACONTACT_API_KEY =
   process.env.NUSACONTACT_API_KEY || 'xxxxxxxxxxxxxxxx'
 export const NUSACONTACT_SENDER_ID =
   process.env.NUSACONTACT_SENDER_ID || '6281234567890'
+
+export const SQL_GET_IP_BY_ACCOUNT =
+  process.env.SQL_GET_IP_BY_ACCOUNT ||
+  'SELECT ip_address FROM subscriptions WHERE account = ?'
+export const SQL_RECORD_IP_USAGE =
+  process.env.SQL_RECORD_IP_USAGE ||
+  'INSERT INTO ip_usage (account, ip, created_at) VALUES (?, ?, NOW())'

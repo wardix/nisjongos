@@ -7,15 +7,18 @@
     "build": "bun build --minify --outdir dist --outfile dist/main.js --target bun src/main.ts"
   },
   "devDependencies": {
-    "@types/bun": "latest"
+    "@types/bun": "latest",
+    "@types/ssh2": "^1.15.5"
   },
   "peerDependencies": {
     "typescript": "^5"
   },
   "dependencies": {
     "axios": "^1.10.0",
+    "ip-cidr": "^4.0.2",
     "mysql2": "^3.14.1",
     "nats": "^2.29.3",
-    "pino": "^9.6.0"
+    "pino": "^9.6.0",
+    "ssh2": "^1.17.0"
   }
 }
