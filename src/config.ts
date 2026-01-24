@@ -59,8 +59,8 @@ export const NUSASELECTA_ROUTER_PORT = Number(
 )
 export const NUSASELECTA_ROUTER_USER =
   process.env.NUSASELECTA_ROUTER_USER || 'admin'
-export const NUSASELECTA_ROUTER_PASSWORD =
-  process.env.NUSASELECTA_ROUTER_PASSWORD || ''
+export const NUSASELECTA_ROUTER_PRIVATE_KEY =
+  process.env.NUSASELECTA_ROUTER_PRIVATE_KEY || ''
 export const NUSASELECTA_CMD_TEMPLATE =
   process.env.NUSASELECTA_CMD_TEMPLATE ||
   '/ip firewall address-list add list=allowed address={ip} comment={account}'

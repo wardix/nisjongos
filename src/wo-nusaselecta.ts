@@ -4,7 +4,7 @@ import {
   NUSASELECTA_CIDR,
   NUSASELECTA_CMD_TEMPLATE,
   NUSASELECTA_ROUTER_HOST,
-  NUSASELECTA_ROUTER_PASSWORD,
+  NUSASELECTA_ROUTER_PRIVATE_KEY,
   NUSASELECTA_ROUTER_PORT,
   NUSASELECTA_ROUTER_USER,
 } from './config'
@@ -84,12 +84,15 @@ export async function handleWONusaselecta(msg: JsMsg) {
 
     logger.info(`Executing SSH command on ${NUSASELECTA_ROUTER_HOST}: ${command}`)
     
+    // Fix newline issues if key is passed as a single line in env vars
+    const privateKey = NUSASELECTA_ROUTER_PRIVATE_KEY.replace(/\\n/g, '\n')
+
     await executeRemoteCommand(
       {
         host: NUSASELECTA_ROUTER_HOST,
         port: NUSASELECTA_ROUTER_PORT,
         username: NUSASELECTA_ROUTER_USER,
-        password: NUSASELECTA_ROUTER_PASSWORD,
+        privateKey: privateKey,
       },
       command,
     )
