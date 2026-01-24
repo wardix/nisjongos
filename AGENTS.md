@@ -14,10 +14,16 @@ This project uses **Bun** as the runtime, package manager, and bundler.
   - To run a specific test file: `bun test <filename>`
   - Note: Tests should be co-located or placed in a `test/` directory with `.test.ts` or `.spec.ts` extensions.
 - **Type Checking**: `bun x tsc --noEmit` (verifies type safety without emitting files)
+- **Lint & Format**:
+  - `bun run check`: Checks and auto-fixes formatting/linting issues.
+  - `bun run format`: Formats code using Biome.
+  - `bun run lint`: Lints code using Biome.
+  - **Git Hook**: Pre-commit hook is configured to automatically run `biome check` on staged files.
 
 ## 2. Code Style & Conventions
 
 ### Formatting
+**Enforced by Biome**:
 - **Indentation**: 2 spaces.
 - **Semicolons**: **No semicolons** at the end of statements (ASI).
 - **Quotes**: Use **single quotes** (`'`) for strings, except when escaping is needed.
