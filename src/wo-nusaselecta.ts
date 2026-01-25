@@ -92,8 +92,9 @@ export async function handleWONusaselecta(msg: JsMsg) {
 
     // 3. Configure Router (Idempotent: running it again ensures state)
     let profile = NUSASELECTA_DEFAULT_PROFILE
-    if (bandwidth && NUSASELECTA_BW_PROFILE_MAP[bandwidth]) {
-      profile = NUSASELECTA_BW_PROFILE_MAP[bandwidth]
+    const bandwidthKey = String(bandwidth)
+    if (bandwidth && NUSASELECTA_BW_PROFILE_MAP[bandwidthKey]) {
+      profile = NUSASELECTA_BW_PROFILE_MAP[bandwidthKey]
     } else {
       logger.warn(
         `No profile map found for bandwidth: ${bandwidth}, using default: ${profile}`,
