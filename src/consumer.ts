@@ -1,7 +1,8 @@
-import { type JsMsg } from 'nats'
+import type { JsMsg } from 'nats'
+import { handleProvisPaid } from './provis-paid'
 import { handleServiceClosed } from './service-closed'
-import { handleTtsCreated } from './tts-created'
 import { handleTicketSolved } from './ticket-solved'
+import { handleTtsCreated } from './tts-created'
 import { handleWONusaselecta } from './wo-nusaselecta'
 
 export async function processMessage(msg: JsMsg): Promise<void> {
@@ -18,6 +19,9 @@ export async function processMessage(msg: JsMsg): Promise<void> {
       break
     case 'wo-nusaselecta':
       handleWONusaselecta(msg)
+      break
+    case 'provis-paid':
+      handleProvisPaid(msg)
       break
   }
 }
