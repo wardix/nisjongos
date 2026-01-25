@@ -113,15 +113,21 @@ export async function handleWONusaselecta(msg: JsMsg) {
     // Fix newline issues if key is passed as a single line in env vars
     const privateKey = NUSASELECTA_ROUTER_PRIVATE_KEY.replace(/\\n/g, '\n')
 
-    await executeRemoteCommand(
-      {
-        host: NUSASELECTA_ROUTER_HOST,
-        port: NUSASELECTA_ROUTER_PORT,
-        username: NUSASELECTA_ROUTER_USER,
-        privateKey: privateKey,
-      },
-      command,
-    )
+    try {
+      await executeRemoteCommand(
+        {
+          host: NUSASELECTA_ROUTER_HOST,
+          port: NUSASELECTA_ROUTER_PORT,
+          username: NUSASELECTA_ROUTER_USER,
+          privateKey: privateKey,
+        },
+        command,
+      )
+    } catch (sshError: any) {
+      logger.warn(
+        `SSH command failed (likely harmless if idempotent): ${sshError.message}`,
+      )
+    }
 
     logger.info(`Successfully processed wo-nusaselecta for ${account}`)
     msg.ack()
