@@ -33,7 +33,7 @@ export async function recordIpUsage(
   ip: string,
 ): Promise<void> {
   try {
-    await pool.execute(SQL_RECORD_IP_USAGE, [accountName, ip])
+    await pool.execute(SQL_RECORD_IP_USAGE, [ip, accountName])
     logger.info(`Recorded IP usage for account ${accountName}: ${ip}`)
   } catch (error: any) {
     logger.error('Error recording IP usage', { error: error.message })
