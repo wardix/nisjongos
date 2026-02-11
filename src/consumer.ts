@@ -21,6 +21,7 @@ export async function processMessage(msg: JsMsg): Promise<void> {
       handleWONusaselecta(msg)
       break
     case 'provis-paid':
+    case 'provis-free':
       handleProvisPaid(msg)
       break
   }
