@@ -101,10 +101,10 @@ export async function handleWONusaselecta(msg: JsMsg) {
       )
     }
 
-    const command = NUSASELECTA_CMD_TEMPLATE.replace('{ip}', ip)
-      .replace('{account}', account)
-      .replace('{password}', password)
-      .replace('{profile}', profile)
+    const command = NUSASELECTA_CMD_TEMPLATE.replaceAll('{ip}', ip)
+      .replaceAll('{account}', account)
+      .replaceAll('{password}', password)
+      .replaceAll('{profile}', profile)
 
     logger.info(
       `Executing SSH command on ${NUSASELECTA_ROUTER_HOST}: ${command}`,
