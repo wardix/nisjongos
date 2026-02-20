@@ -50,6 +50,18 @@ export const SQL_RECORD_IP_USAGE =
   process.env.SQL_RECORD_IP_USAGE ||
   'INSERT INTO ip_usage (account, ip, created_at) VALUES (?, ?, NOW())'
 
+export const CONSUMER_FETCH_BATCH_SIZE = Number(
+  process.env.CONSUMER_FETCH_BATCH_SIZE || 1,
+)
+export const CONSUMER_FETCH_EXPIRES = Number(
+  process.env.CONSUMER_FETCH_EXPIRES || 1000,
+)
+export const LOOP_MIN_DELAY = Number(process.env.LOOP_MIN_DELAY || 100)
+export const LOOP_INITIAL_BACKOFF = Number(
+  process.env.LOOP_INITIAL_BACKOFF || 500,
+)
+export const LOOP_MAX_BACKOFF = Number(process.env.LOOP_MAX_BACKOFF || 5000)
+
 export const NUSASELECTA_CIDR =
   process.env.NUSASELECTA_CIDR || '192.168.10.0/24'
 export const NUSASELECTA_ROUTER_HOST =
