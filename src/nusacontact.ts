@@ -1,6 +1,6 @@
 import axios from 'axios'
+import { NUSACONTACT_API_KEY, NUSACONTACT_MESSAGE_API_URL } from './config'
 import logger from './logger'
-import { NUSACONTACT_MESSAGE_API_URL, NUSACONTACT_API_KEY } from './config'
 
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms))

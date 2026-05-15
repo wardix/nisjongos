@@ -1,11 +1,11 @@
-import { StringCodec, type JsMsg } from 'nats'
-import logger from './logger'
-import { pool } from './database'
+import { type JsMsg, StringCodec } from 'nats'
 import {
   SQL_SUBSCRIPTION_DETAIL,
   TEMPLATE_MESSAGE_TERMINATED_SUBSCRIPTION,
   TERMINATED_SUBSCRIPTION_PICS,
 } from './config'
+import { pool } from './database'
+import logger from './logger'
 import { sendNotification } from './notification'
 
 interface SubscriptionService {
@@ -23,7 +23,7 @@ export async function handleServiceClosed(msg: JsMsg) {
     ])
     const service = rows as SubscriptionService[]
 
-    if (service.length == 0) {
+    if (service.length === 0) {
       msg.ack()
       return
     }

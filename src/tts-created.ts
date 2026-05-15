@@ -1,11 +1,11 @@
-import { StringCodec, type JsMsg } from 'nats'
-import logger from './logger'
-import { pool } from './database'
+import { type JsMsg, StringCodec } from 'nats'
 import {
+  ESCALATION_TICKET_PICS,
   SQL_ESCALATION_TICKET_DETAIL,
   TEMPLATE_MESSAGE_ESCALATION_TICKET,
-  ESCALATION_TICKET_PICS,
 } from './config'
+import { pool } from './database'
+import logger from './logger'
 import { sendNotification } from './notification'
 
 interface Ticket {
@@ -23,7 +23,7 @@ export async function handleTtsCreated(msg: JsMsg) {
     ])
     const ticket = rows as Ticket[]
 
-    if (ticket.length == 0) {
+    if (ticket.length === 0) {
       msg.ack()
       return
     }

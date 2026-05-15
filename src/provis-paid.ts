@@ -22,7 +22,7 @@ export async function handleProvisPaid(msg: JsMsg) {
     logger.error('Error processing provis-paid message', {
       error: error.message,
     })
-    
+
     if (error.message.includes('CRITICAL: No available IP')) {
       // Clear the blocking message if pool is full to prevent infinite loop
       msg.ack()

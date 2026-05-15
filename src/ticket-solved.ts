@@ -1,11 +1,11 @@
-import { StringCodec, type JsMsg } from 'nats'
-import logger from './logger'
-import { pool } from './database'
+import { type JsMsg, StringCodec } from 'nats'
 import {
+  NUSACONTACT_SENDER_ID,
   SQL_ESCALATION_TICKET_DETAIL,
   TEMPLATE_MESSAGE_ESCALATION_TICKET_SOLVED,
-  NUSACONTACT_SENDER_ID,
 } from './config'
+import { pool } from './database'
+import logger from './logger'
 import { sendMessageTemplate } from './nusacontact'
 
 interface Ticket {
@@ -24,7 +24,7 @@ export async function handleTicketSolved(msg: JsMsg) {
     const ticket = rows as Ticket[]
 
     if (
-      ticket.length == 0 ||
+      ticket.length === 0 ||
       !('sendSmsOnTicketSolved' in payload) ||
       !payload.sendSmsOnTicketSolved
     ) {

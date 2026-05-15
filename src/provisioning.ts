@@ -3,10 +3,7 @@ import {
   NUSASELECTA_CIDR,
   NUSASELECTA_CMD_TEMPLATE,
   NUSASELECTA_DEFAULT_PROFILE,
-  NUSASELECTA_ROUTER_HOST,
-  NUSASELECTA_ROUTER_PORT,
-  NUSASELECTA_ROUTER_PRIVATE_KEY,
-  NUSASELECTA_ROUTER_USER,
+  NUSASELECTA_ROUTERS,
 } from './config'
 import {
   findAvailableIp,
@@ -24,7 +21,7 @@ export interface ProvisioningOptions {
 }
 
 /**
- * Handles the core IP provisioning and router configuration logic.
+ * Handles the core IP provisioning and router configuration logic across multiple routers.
  * This function is idempotent.
  */
 export async function provisionAccount({
@@ -39,7 +36,7 @@ export async function provisionAccount({
     logger.info(`Account ${account} already has IP: ${ip}`)
   } else {
     // 2. Provision new IP
-    const cidrPools = NUSASELECTA_CIDR.split(',').map((c) => c.trim())
+    const cidrPools = NUSASELECTA_CIDR.split(',').map((c: string) => c.trim())
     let newIp: string | null = null
 
     for (const poolCidr of cidrPools) {
@@ -60,7 +57,9 @@ export async function provisionAccount({
     }
 
     if (!newIp) {
-      throw new Error(`CRITICAL: No available IP in pools [${NUSASELECTA_CIDR}] for account ${account}`)
+      throw new Error(
+        `CRITICAL: No available IP in pools [${NUSASELECTA_CIDR}] for account ${account}`,
+      )
     }
 
     await recordIpUsage(account, newIp)
@@ -68,7 +67,7 @@ export async function provisionAccount({
     logger.info(`Allocated new IP ${ip} for account ${account}`)
   }
 
-  // 3. Configure Router
+  // 3. Configure Routers
   let profile = NUSASELECTA_DEFAULT_PROFILE
   const bandwidthKey = String(bandwidth)
   if (bandwidth && NUSASELECTA_BW_PROFILE_MAP[bandwidthKey]) {
@@ -84,23 +83,32 @@ export async function provisionAccount({
     .replaceAll('{password}', password)
     .replaceAll('{profile}', profile)
 
-  logger.info(`Executing SSH command on ${NUSASELECTA_ROUTER_HOST}: ${command}`)
+  logger.info(`Executing SSH command on ${NUSASELECTA_ROUTERS.length} routers`)
 
-  const privateKey = NUSASELECTA_ROUTER_PRIVATE_KEY.replace(/\\n/g, '\n')
-
-  try {
-    await executeRemoteCommand(
+  const sshPromises = NUSASELECTA_ROUTERS.map((router) =>
+    executeRemoteCommand(
       {
-        host: NUSASELECTA_ROUTER_HOST,
-        port: NUSASELECTA_ROUTER_PORT,
-        username: NUSASELECTA_ROUTER_USER,
-        privateKey: privateKey,
+        host: router.host,
+        port: router.port,
+        username: router.username,
+        privateKey: router.privateKey,
       },
       command,
-    )
-  } catch (sshError: any) {
-    logger.warn(`SSH command failed (likely harmless if idempotent): ${sshError.message}`)
-  }
+    ).then(() => {
+      logger.info(`Successfully configured router: ${router.host}`)
+    }),
+  )
+
+  const results = await Promise.allSettled(sshPromises)
+
+  results.forEach((result, index) => {
+    const router = NUSASELECTA_ROUTERS[index]
+    if (result.status === 'rejected' && router) {
+      logger.warn(
+        `Failed to configure router ${router.host}: ${result.reason?.message || result.reason}`,
+      )
+    }
+  })
 
   return ip
 }

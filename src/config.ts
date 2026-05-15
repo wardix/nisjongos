@@ -64,15 +64,21 @@ export const LOOP_MAX_BACKOFF = Number(process.env.LOOP_MAX_BACKOFF || 5000)
 
 export const NUSASELECTA_CIDR =
   process.env.NUSASELECTA_CIDR || '192.168.10.0/24'
-export const NUSASELECTA_ROUTER_HOST =
-  process.env.NUSASELECTA_ROUTER_HOST || 'localhost'
-export const NUSASELECTA_ROUTER_PORT = Number(
-  process.env.NUSASELECTA_ROUTER_PORT || 22,
-)
-export const NUSASELECTA_ROUTER_USER =
-  process.env.NUSASELECTA_ROUTER_USER || 'admin'
-export const NUSASELECTA_ROUTER_PRIVATE_KEY =
-  process.env.NUSASELECTA_ROUTER_PRIVATE_KEY || ''
+
+export interface RouterConfig {
+  host: string
+  port: number
+  username: string
+  privateKey: string
+}
+
+export const NUSASELECTA_ROUTERS: RouterConfig[] = (
+  JSON.parse(process.env.NUSASELECTA_ROUTERS || '[]') as RouterConfig[]
+).map((r) => ({
+  ...r,
+  privateKey: r.privateKey.replace(/\\n/g, '\n'),
+}))
+
 export const NUSASELECTA_CMD_TEMPLATE =
   process.env.NUSASELECTA_CMD_TEMPLATE ||
   '/ip firewall address-list add list=allowed address={ip} comment={account}'
