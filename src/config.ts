@@ -90,3 +90,6 @@ export const NUSASELECTA_DEFAULT_PROFILE =
 export const SQL_GET_USED_IPS_BY_PREFIX =
   process.env.SQL_GET_USED_IPS_BY_PREFIX ||
   'SELECT ip FROM ip_usage WHERE ip LIKE ?'
+
+export const SYSLOG_ENABLED = process.env.SYSLOG_ENABLED === 'true'
+export const SYSLOG_APPNAME = process.env.SYSLOG_APPNAME || 'nisjongos'
