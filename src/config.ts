@@ -93,3 +93,4 @@ export const SQL_GET_USED_IPS_BY_PREFIX =
 
 export const SYSLOG_ENABLED = process.env.SYSLOG_ENABLED === 'true'
 export const SYSLOG_APPNAME = process.env.SYSLOG_APPNAME || 'nisjongos'
+export const SYSLOG_DEBUG = process.env.SYSLOG_DEBUG === 'true'

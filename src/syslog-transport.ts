@@ -1,10 +1,11 @@
-import { connect, type Socket } from 'node:net'
+import { createSocket, type Socket } from 'node:dgram'
 import build from 'pino-abstract-transport'
 
 interface SyslogTransportOptions {
   address?: string
   appname?: string
   facility?: number
+  debug?: boolean
 }
 
 const SEVERITY_MAP: Record<string, number> = {
@@ -16,52 +17,48 @@ const SEVERITY_MAP: Record<string, number> = {
   fatal: 0, // emerg
 }
 
+function log(debug: boolean, msg: string) {
+  if (debug) {
+    process.stderr.write(`[syslog-transport] ${msg}\n`)
+  }
+}
+
 /**
  * Custom pino transport that formats log entries as RFC 3164 syslog
- * messages and sends them to a Unix stream socket (e.g. /dev/log).
- *
- * If the socket is unavailable, logs are silently dropped to avoid
- * crashing the application. Reconnection is attempted on each write.
+ * messages and sends them to /dev/log via Unix datagram socket.
  */
 export default async function (opts: SyslogTransportOptions) {
   const socketPath = opts.address || '/dev/log'
   const appname = opts.appname || 'nisjongos'
   const facility = opts.facility ?? 16 // local0
+  const debug = opts.debug ?? false
 
   let socket: Socket | null = null
-  let connected = false
+  let ready = false
 
-  function createSocket() {
+  function createSyslogSocket() {
     try {
-      const s = connect(socketPath)
+      log(debug, `Creating unix_dgram socket for ${socketPath}`)
 
-      s.on('connect', () => {
-        connected = true
+      // 'unix_dgram' is not in Node.js typings but supported by Bun runtime
+      // biome-ignore lint/suspicious/noExplicitAny: unix_dgram not in SocketType
+      socket = createSocket('unix_dgram' as any)
+
+      socket.on('error', (err) => {
+        log(debug, `Socket error: ${err.message}`)
+        ready = false
       })
 
-      s.on('error', () => {
-        connected = false
-        try {
-          s.destroy()
-        } catch {
-          // ignore
-        }
-        socket = null
-      })
-
-      s.on('close', () => {
-        connected = false
-        socket = null
-      })
-
-      socket = s
-    } catch {
+      ready = true
+      log(debug, 'Socket created (dgram is connectionless)')
+    } catch (err) {
+      log(debug, `Failed to create socket: ${err}`)
       socket = null
-      connected = false
+      ready = false
     }
   }
 
-  createSocket()
+  createSyslogSocket()
 
   function toSyslog(obj: Record<string, unknown>): string {
     const pinoLevel = levelToName(Number(obj.level ?? 30))
@@ -69,9 +66,9 @@ export default async function (opts: SyslogTransportOptions) {
     const priority = facility * 8 + severity
 
     const time = obj.time ? new Date(obj.time as number) : new Date()
-    const timestamp = time.toLocaleString('en-US', {
-      month: 'short',
-      day: '2-digit',
+    const month = time.toLocaleString('en-US', { month: 'short' })
+    const day = String(time.getDate()).padStart(2, ' ')
+    const timeStr = time.toLocaleTimeString('en-US', {
       hour: '2-digit',
       minute: '2-digit',
       second: '2-digit',
@@ -80,30 +77,41 @@ export default async function (opts: SyslogTransportOptions) {
 
     const msg = obj.msg || JSON.stringify(obj)
 
-    // RFC 3164: <priority>timestamp hostname appname: message
-    return `<${priority}>${timestamp} ${appname}: ${msg}\n`
+    // RFC 3164: <priority>Mon DD HH:MM:SS appname: message
+    return `<${priority}>${month} ${day} ${timeStr} ${appname}: ${msg}`
   }
 
   return build(
     async (source) => {
       for await (const obj of source) {
         const msg = toSyslog(obj)
+        const buf = Buffer.from(msg)
 
-        // Attempt reconnect if socket is down
-        if (!socket || !connected) {
-          createSocket()
+        if (!socket || !ready) {
+          log(debug, 'Socket not ready, attempting reconnect...')
+          createSyslogSocket()
         }
 
-        // Write only if connected; silently drop otherwise
-        if (socket && connected) {
-          socket.write(msg)
+        if (socket && ready) {
+          // biome-ignore lint/suspicious/noExplicitAny: unix_dgram send accepts path as port
+          socket.send(buf, 0, buf.length, socketPath as any, (err) => {
+            if (err) {
+              log(debug, `Send error: ${err.message}`)
+              ready = false
+            } else {
+              log(debug, `Sent: ${msg}`)
+            }
+          })
+        } else {
+          log(debug, `Dropped: ${msg}`)
         }
       }
     },
     {
       close() {
+        log(debug, 'Transport closing')
         if (socket) {
-          socket.destroy()
+          socket.close()
           socket = null
         }
       },

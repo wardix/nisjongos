@@ -1,6 +1,6 @@
 import type { TransportTargetOptions } from 'pino'
 import pino from 'pino'
-import { SYSLOG_APPNAME, SYSLOG_ENABLED } from './config'
+import { SYSLOG_APPNAME, SYSLOG_DEBUG, SYSLOG_ENABLED } from './config'
 
 function buildTargets(): TransportTargetOptions[] {
   const targets: TransportTargetOptions[] = [
@@ -18,6 +18,7 @@ function buildTargets(): TransportTargetOptions[] {
         address: '/dev/log',
         appname: SYSLOG_APPNAME,
         facility: 16, // local0
+        debug: SYSLOG_DEBUG,
       },
       level: 'info',
     })
