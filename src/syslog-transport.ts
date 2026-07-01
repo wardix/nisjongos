@@ -1,20 +1,37 @@
-import { createSocket, type Socket } from 'node:dgram'
+import { type ChildProcess, spawn } from 'node:child_process'
 import build from 'pino-abstract-transport'
 
 interface SyslogTransportOptions {
-  address?: string
   appname?: string
   facility?: number
   debug?: boolean
 }
 
-const SEVERITY_MAP: Record<string, number> = {
-  trace: 7, // debug
-  debug: 7,
-  info: 6,
-  warn: 4, // warning
-  error: 3,
-  fatal: 0, // emerg
+const FACILITY_NAMES: Record<number, string> = {
+  0: 'kern',
+  1: 'user',
+  2: 'mail',
+  3: 'daemon',
+  4: 'auth',
+  8: 'uucp',
+  9: 'cron',
+  16: 'local0',
+  17: 'local1',
+  18: 'local2',
+  19: 'local3',
+  20: 'local4',
+  21: 'local5',
+  22: 'local6',
+  23: 'local7',
+}
+
+const SEVERITY_NAMES: Record<string, string> = {
+  trace: 'debug',
+  debug: 'debug',
+  info: 'info',
+  warn: 'warning',
+  error: 'err',
+  fatal: 'emerg',
 }
 
 function log(debug: boolean, msg: string) {
@@ -24,95 +41,93 @@ function log(debug: boolean, msg: string) {
 }
 
 /**
- * Custom pino transport that formats log entries as RFC 3164 syslog
- * messages and sends them to /dev/log via Unix datagram socket.
+ * Custom pino transport that sends log entries to the local syslog
+ * using the system `logger` command with --prio-prefix.
+ *
+ * This avoids socket-type issues entirely because `logger` handles
+ * communication with the local syslog daemon natively.
  */
 export default async function (opts: SyslogTransportOptions) {
-  const socketPath = opts.address || '/dev/log'
   const appname = opts.appname || 'nisjongos'
-  const facility = opts.facility ?? 16 // local0
+  const facility = opts.facility ?? 16
   const debug = opts.debug ?? false
+  const facilityName = FACILITY_NAMES[facility] || 'local0'
 
-  let socket: Socket | null = null
+  let proc: ChildProcess | null = null
   let ready = false
 
-  function createSyslogSocket() {
+  function spawnLogger() {
     try {
-      log(debug, `Creating unix_dgram socket for ${socketPath}`)
+      const args = ['-t', appname, '--prio-prefix']
+      log(debug, `Spawning: logger ${args.join(' ')}`)
 
-      // 'unix_dgram' is not in Node.js typings but supported by Bun runtime
-      // biome-ignore lint/suspicious/noExplicitAny: unix_dgram not in SocketType
-      socket = createSocket('unix_dgram' as any)
+      const p = spawn('logger', args, {
+        stdio: ['pipe', 'ignore', 'ignore'],
+      })
 
-      socket.on('error', (err) => {
-        log(debug, `Socket error: ${err.message}`)
+      p.on('error', (err) => {
+        log(debug, `logger process error: ${err.message}`)
+        ready = false
+        proc = null
+      })
+
+      p.on('exit', (code) => {
+        log(debug, `logger process exited (code: ${code})`)
+        ready = false
+        proc = null
+      })
+
+      p.stdin?.on('error', (err) => {
+        log(debug, `logger stdin error: ${err.message}`)
         ready = false
       })
 
+      proc = p
       ready = true
-      log(debug, 'Socket created (dgram is connectionless)')
+      log(debug, `logger process started (pid: ${p.pid})`)
     } catch (err) {
-      log(debug, `Failed to create socket: ${err}`)
-      socket = null
+      log(debug, `Failed to spawn logger: ${err}`)
+      proc = null
       ready = false
     }
   }
 
-  createSyslogSocket()
+  spawnLogger()
 
-  function toSyslog(obj: Record<string, unknown>): string {
+  function toSyslogLine(obj: Record<string, unknown>): string {
     const pinoLevel = levelToName(Number(obj.level ?? 30))
-    const severity = SEVERITY_MAP[pinoLevel] ?? 6
-    const priority = facility * 8 + severity
-
-    const time = obj.time ? new Date(obj.time as number) : new Date()
-    const month = time.toLocaleString('en-US', { month: 'short' })
-    const day = String(time.getDate()).padStart(2, ' ')
-    const timeStr = time.toLocaleTimeString('en-US', {
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-      hour12: false,
-    })
-
+    const severity = SEVERITY_NAMES[pinoLevel] || 'info'
     const msg = obj.msg || JSON.stringify(obj)
 
-    // RFC 3164: <priority>Mon DD HH:MM:SS appname: message
-    return `<${priority}>${month} ${day} ${timeStr} ${appname}: ${msg}`
+    // --prio-prefix format: <facility.severity>message
+    return `<${facilityName}.${severity}>${msg}\n`
   }
 
   return build(
     async (source) => {
       for await (const obj of source) {
-        const msg = toSyslog(obj)
-        const buf = Buffer.from(msg)
+        const line = toSyslogLine(obj)
 
-        if (!socket || !ready) {
-          log(debug, 'Socket not ready, attempting reconnect...')
-          createSyslogSocket()
+        if (!proc || !ready) {
+          log(debug, 'logger process not available, respawning...')
+          spawnLogger()
         }
 
-        if (socket && ready) {
-          // biome-ignore lint/suspicious/noExplicitAny: unix_dgram send accepts path as port
-          socket.send(buf, 0, buf.length, socketPath as any, (err) => {
-            if (err) {
-              log(debug, `Send error: ${err.message}`)
-              ready = false
-            } else {
-              log(debug, `Sent: ${msg}`)
-            }
-          })
+        if (proc && ready) {
+          proc.stdin?.write(line)
+          log(debug, `Sent: ${line.trim()}`)
         } else {
-          log(debug, `Dropped: ${msg}`)
+          log(debug, `Dropped: ${line.trim()}`)
         }
       }
     },
     {
       close() {
         log(debug, 'Transport closing')
-        if (socket) {
-          socket.close()
-          socket = null
+        if (proc) {
+          proc.stdin?.end()
+          proc.kill()
+          proc = null
         }
       },
     },
