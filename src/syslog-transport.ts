@@ -1,4 +1,4 @@
-import { connect } from 'node:net'
+import { connect, type Socket } from 'node:net'
 import build from 'pino-abstract-transport'
 
 interface SyslogTransportOptions {
@@ -19,23 +19,49 @@ const SEVERITY_MAP: Record<string, number> = {
 /**
  * Custom pino transport that formats log entries as RFC 3164 syslog
  * messages and sends them to a Unix stream socket (e.g. /dev/log).
+ *
+ * If the socket is unavailable, logs are silently dropped to avoid
+ * crashing the application. Reconnection is attempted on each write.
  */
 export default async function (opts: SyslogTransportOptions) {
   const socketPath = opts.address || '/dev/log'
   const appname = opts.appname || 'nisjongos'
   const facility = opts.facility ?? 16 // local0
 
-  let socket = connect(socketPath)
+  let socket: Socket | null = null
+  let connected = false
 
-  socket.on('error', () => {
-    // Silently reconnect on socket errors to avoid crashing the app.
+  function createSocket() {
     try {
-      socket.destroy()
-      socket = connect(socketPath)
+      const s = connect(socketPath)
+
+      s.on('connect', () => {
+        connected = true
+      })
+
+      s.on('error', () => {
+        connected = false
+        try {
+          s.destroy()
+        } catch {
+          // ignore
+        }
+        socket = null
+      })
+
+      s.on('close', () => {
+        connected = false
+        socket = null
+      })
+
+      socket = s
     } catch {
-      // ignore reconnect failures
+      socket = null
+      connected = false
     }
-  })
+  }
+
+  createSocket()
 
   function toSyslog(obj: Record<string, unknown>): string {
     const pinoLevel = levelToName(Number(obj.level ?? 30))
@@ -62,12 +88,24 @@ export default async function (opts: SyslogTransportOptions) {
     async (source) => {
       for await (const obj of source) {
         const msg = toSyslog(obj)
-        socket.write(msg)
+
+        // Attempt reconnect if socket is down
+        if (!socket || !connected) {
+          createSocket()
+        }
+
+        // Write only if connected; silently drop otherwise
+        if (socket && connected) {
+          socket.write(msg)
+        }
       }
     },
     {
       close() {
-        socket.destroy()
+        if (socket) {
+          socket.destroy()
+          socket = null
+        }
       },
     },
   )
