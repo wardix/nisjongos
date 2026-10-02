@@ -1,8 +1,11 @@
 import { type JsMsg, StringCodec } from 'nats'
 import {
   NUSACONTACT_SENDER_ID,
+  NUSASELECTA_BRANCH_IDS,
+  NUSASELECTA_SENDER_ID,
   SQL_ESCALATION_TICKET_DETAIL,
   TEMPLATE_MESSAGE_ESCALATION_TICKET_SOLVED,
+  TEMPLATE_MESSAGE_NUSASELECTA_TICKET_SOLVED,
 } from './config'
 import { pool } from './database'
 import logger from './logger'
@@ -12,6 +15,14 @@ interface Ticket {
   id: number
   contact: string
   subject: string
+  branchId: string | null
+}
+
+export function isNusaselectaBranch(branchId: string | null | undefined) {
+  if (branchId === null || branchId === undefined) {
+    return false
+  }
+  return NUSASELECTA_BRANCH_IDS.includes(String(branchId).trim())
 }
 
 export async function handleTicketSolved(msg: JsMsg) {
@@ -32,20 +43,23 @@ export async function handleTicketSolved(msg: JsMsg) {
       return
     }
 
-    ticket.forEach(async ({ contact }) => {
+    for (const { contact, branchId } of ticket) {
       const contactDigits = contact.replace(/\D/g, '')
       const safeContact = contactDigits.startsWith('0')
         ? `62${contactDigits.substring(1)}`
         : contactDigits
-      sendMessageTemplate(
+      const isNusaselecta = isNusaselectaBranch(branchId)
+      await sendMessageTemplate(
         safeContact,
         {
-          name: TEMPLATE_MESSAGE_ESCALATION_TICKET_SOLVED,
+          name: isNusaselecta
+            ? TEMPLATE_MESSAGE_NUSASELECTA_TICKET_SOLVED
+            : TEMPLATE_MESSAGE_ESCALATION_TICKET_SOLVED,
           language: { code: 'id' },
         },
-        NUSACONTACT_SENDER_ID,
+        isNusaselecta ? NUSASELECTA_SENDER_ID : NUSACONTACT_SENDER_ID,
       )
-    })
+    }
     msg.ack()
   } catch (error: any) {
     logger.error('Error processing ticket-solved message', {

@@ -24,7 +24,7 @@ export const TERMINATED_SUBSCRIPTION_PICS = JSON.parse(
 
 export const SQL_ESCALATION_TICKET_DETAIL =
   process.env.SQL_ESCALATION_TICKET_DETAIL ||
-  'SELECT id, subject, contact FROM tickets WHERE id = ?'
+  'SELECT id, subject, contact, branch_id AS branchId FROM tickets WHERE id = ?'
 export const TEMPLATE_MESSAGE_ESCALATION_TICKET =
   process.env.TEMPLATE_MESSAGE_ESCALATION_TICKET ||
   'Escalation ticket created {id} {subject}'
@@ -42,6 +42,16 @@ export const NUSACONTACT_API_KEY =
   process.env.NUSACONTACT_API_KEY || 'xxxxxxxxxxxxxxxx'
 export const NUSACONTACT_SENDER_ID =
   process.env.NUSACONTACT_SENDER_ID || '6281234567890'
+export const NUSASELECTA_SENDER_ID =
+  process.env.NUSASELECTA_SENDER_ID || '6281234567891'
+export const NUSASELECTA_BRANCH_IDS = (
+  process.env.NUSASELECTA_BRANCH_IDS || '028'
+)
+  .split(',')
+  .map((id) => id.trim())
+export const TEMPLATE_MESSAGE_NUSASELECTA_TICKET_SOLVED =
+  process.env.TEMPLATE_MESSAGE_NUSASELECTA_TICKET_SOLVED ||
+  'escalation_ticket_solved_v1_copy'
 
 export const SQL_GET_IP_BY_ACCOUNT =
   process.env.SQL_GET_IP_BY_ACCOUNT ||
