@@ -8,7 +8,9 @@ export async function handleWONusaselecta(msg: JsMsg) {
     const payload = JSON.parse(sc.decode(msg.data))
 
     if (!payload.provisioningData) {
-      logger.error('wo-nusaselecta: missing provisioningData in payload')
+      logger.error('wo-nusaselecta: missing provisioningData in payload', {
+        payload,
+      })
       msg.ack()
       return
     }
